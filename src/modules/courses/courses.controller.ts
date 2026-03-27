@@ -110,7 +110,16 @@ export class CoursesController {
     const showDeleted = query.isDeleted === 'true';
     return this.coursesService.findAll(showDeleted);
   }
-@ApiOperation({ summary: `Bitta kurs haqida ma'lumot` })
+
+  @ApiOperation({ summary: `Mentorning o'ziga tegishli barcha kurslari` })
+  @Roles(UserRole.MENTOR)
+  @UseGuards(TokenGuard, RoleGuard)
+  @Get('my')
+  findMyCourses(@Req() req: any) {
+    return this.coursesService.findMyCoursesAsMentor(req.user.id);
+  }
+
+  @ApiOperation({ summary: `Bitta kurs haqida ma'lumot` })
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.coursesService.findOne(id);

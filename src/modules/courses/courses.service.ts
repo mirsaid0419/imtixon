@@ -48,6 +48,20 @@ export class CoursesService {
     };
   }
 
+  async findMyCoursesAsMentor(mentorId: number) {
+    return {
+      success: true,
+      data: await this.prisma.course.findMany({
+        where: { mentorId, isDeleted: false },
+        include: {
+          category: true,
+          _count: { select: { assignedBy: true, purchasedBy: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    };
+  }
+
   async findOne(id: number) {
     const existCourse = await this.prisma.course.findUnique({
       where: { id },
@@ -118,7 +132,7 @@ export class CoursesService {
   //     }),
   //   };
   // }
-  
+
   async remove(id: number) {
     const existCourse = await this.prisma.course.findUnique({
       where: { id },
