@@ -16,7 +16,6 @@ export class HomeworkService {
         private readonly cloudinary: CloudinaryService,
     ) { }
 
-    // --- HOMEWORK (Dars vazifasi) ---
 
     async createHomework(userId: number, role: UserRole, dto: CreateHomeworkDto, fileData?: { url: string; publicId: string }) {
         const lesson = await this.prisma.lesson.findUnique({
@@ -27,7 +26,6 @@ export class HomeworkService {
         if (!lesson) throw new NotFoundException('Dars topilmadi');
         if (lesson.homework) throw new ConflictException('Ushbu dars uchun vazifa allaqachon yaratilgan');
 
-        // Faqat Admin yoki Kurs mentori vazifa qo'sha oladi
         if (role !== UserRole.ADMIN && lesson.section.course.mentorId !== userId) {
             throw new ForbiddenException("Siz ushbu darsga vazifa qo'sha olmaysiz");
         }
@@ -86,7 +84,36 @@ export class HomeworkService {
         return await this.prisma.homework.delete({ where: { id } });
     }
 
-    async findHomeworkByLesson(lessonId: number) {
+    async findHomeworkByLesson(lessonId: number, userId: number, role: UserRole) {
+        const lesson = await this.prisma.lesson.findUnique({
+            where: { id: lessonId },
+            include: { section: { include: { course: true } } }
+        });
+        if (!lesson) throw new NotFoundException('Dars topilmadi');
+
+        if (role === UserRole.MENTOR && lesson.section.course.mentorId !== userId) {
+            throw new ForbiddenException("Siz ushbu kursning mentori emassiz");
+        }
+
+        if (role === UserRole.STUDENT) {
+            const assignment = await this.prisma.assignedCourse.findUnique({
+                where: { userId_courseId: { userId, courseId: lesson.section.courseId } }
+            });
+            const purchased = await this.prisma.purchasedCourse.findUnique({
+                where: { courseId_userId: { courseId: lesson.section.courseId, userId } }
+            });
+            if (!assignment && !purchased) {
+                throw new ForbiddenException("Siz ushbu kursga obuna emassiz yoki sotib olmagansiz");
+            }
+
+            const viewed = await this.prisma.lessonView.findUnique({
+                where: { lessonId_userId: { lessonId, userId } }
+            });
+            if (!viewed || !viewed.view) {
+                throw new ForbiddenException("Vazifani ko'rish uchun avval darsni ko'rib bo'ling");
+            }
+        }
+
         const homework = await this.prisma.homework.findUnique({
             where: { lessonId },
         });

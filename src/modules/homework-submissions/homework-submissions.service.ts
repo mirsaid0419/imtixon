@@ -19,11 +19,17 @@ export class HomeworkSubmissionsService {
 
         if (!homework) throw new NotFoundException('Vazifa topilmadi');
 
-        // Talaba kursga yozilganligini tekshirish
         const assignment = await this.prisma.assignedCourse.findUnique({
             where: { userId_courseId: { userId, courseId: homework.lesson.section.courseId } }
         });
         if (!assignment) throw new ForbiddenException("Ushbu kurs uchun vazifa topshira olmaysiz");
+
+        const viewed = await this.prisma.lessonView.findUnique({
+            where: { lessonId_userId: { lessonId: homework.lessonId, userId } }
+        });
+        if (!viewed || !viewed.view) {
+            throw new ForbiddenException("Vazifa topshirish uchun avval darsni ko'rib bo'ling");
+        }
 
         return await this.prisma.homeworkSubmission.create({
             data: {

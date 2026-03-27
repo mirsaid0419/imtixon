@@ -69,12 +69,6 @@ export class LessonsService {
                         id: true,
                         name: true,
                         about: true,
-                        video: true,
-                        views: role === UserRole.STUDENT ? {
-                            where: { userId },
-                            select: { view: true }
-                        } : false,
-                        _count: { select: { views: true } }
                     },
                     orderBy: { id: 'asc' }
                 }
@@ -89,6 +83,7 @@ export class LessonsService {
     }
 
     async findOne(id: number, userId: number, role: UserRole) {
+
         const lesson = await this.prisma.lesson.findUnique({
             where: { id },
             include: {
@@ -100,6 +95,9 @@ export class LessonsService {
 
         if (!lesson) throw new NotFoundException('Dars topilmadi');
 
+        if (role === UserRole.MENTOR && lesson.section.course.mentorId !== userId) {
+            throw new ForbiddenException("Siz ushbu kurs darslarini ko'rish huquqiga ega emassiz");
+        }
         if (role === UserRole.STUDENT) {
             const assignment = await this.prisma.assignedCourse.findUnique({
                 where: { userId_courseId: { userId, courseId: lesson.section.courseId } }
@@ -135,12 +133,14 @@ export class LessonsService {
                 }
             }
 
-            // Oxirgi faoliyatni yangilash
             await this.prisma.lastActivity.upsert({
                 where: { userId_courseId: { userId, courseId: lesson.section.courseId } },
                 update: { sectionId: lesson.sectionId, lessonId: id },
                 create: { userId, courseId: lesson.section.courseId, sectionId: lesson.sectionId, lessonId: id }
             });
+
+            // Darsni ko'rilgan deb belgilash
+            await this.markAsViewed(userId, id);
         }
 
         return lesson;

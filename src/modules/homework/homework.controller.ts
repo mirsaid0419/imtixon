@@ -32,7 +32,7 @@ export class HomeworkController {
         private readonly cloudinary: CloudinaryService,
     ) { }
 
-    @ApiOperation({ summary: "Dars uchun yangi vazifa yaratish (Admin yoki MENTOR)" })
+    @ApiOperation({ summary: "Dars uchun yangi vazifa yaratish (Admin yoki kurs mentori)" })
     @Roles(UserRole.ADMIN, UserRole.MENTOR)
     @ApiConsumes('multipart/form-data')
     @UseInterceptors(FileInterceptor('file'))
@@ -50,7 +50,7 @@ export class HomeworkController {
         return this.homeworkService.createHomework(req.user.id, req.user.role, dto, fileData);
     }
 
-    @ApiOperation({ summary: "Vazifani tahrirlash (Admin yoki MENTOR)" })
+    @ApiOperation({ summary: "Vazifani tahrirlash (Admin yoki kurs mentori)" })
     @Roles(UserRole.ADMIN, UserRole.MENTOR)
     @ApiConsumes('multipart/form-data')
     @UseInterceptors(FileInterceptor('file'))
@@ -69,17 +69,17 @@ export class HomeworkController {
         return this.homeworkService.updateHomework(id, req.user.id, req.user.role, dto, fileData);
     }
 
-    @ApiOperation({ summary: "Vazifani o'chirish (Admin yoki MENTOR)" })
+    @ApiOperation({ summary: "Vazifani o'chirish (Admin yoki kurs mentori)" })
     @Roles(UserRole.ADMIN, UserRole.MENTOR)
     @Delete(':id')
     remove(@Req() req, @Param('id', ParseIntPipe) id: number) {
         return this.homeworkService.removeHomework(id, req.user.id, req.user.role);
     }
 
-    @ApiOperation({ summary: "Darsga tegishli vazifani ko'rish" })
+    @ApiOperation({ summary: "Darsga tegishli vazifani ko'rish(sotib olgan talaba, admin yoki kurs mentori)" })
     @Get('lesson/:lessonId')
     @Roles(UserRole.ADMIN, UserRole.MENTOR, UserRole.STUDENT)
-    findByLesson(@Param('lessonId', ParseIntPipe) lessonId: number) {
-        return this.homeworkService.findHomeworkByLesson(lessonId);
+    findByLesson(@Req() req, @Param('lessonId', ParseIntPipe) lessonId: number) {
+        return this.homeworkService.findHomeworkByLesson(lessonId, req.user.id, req.user.role);
     }
 }

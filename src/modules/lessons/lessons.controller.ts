@@ -88,11 +88,4 @@ export class LessonsController {
     remove(@Req() req, @Param('id', ParseIntPipe) id: number) {
         return this.lessonsService.remove(id, req.user.id, req.user.role);
     }
-
-    @ApiOperation({ summary: "Darsni ko'rilgan deb belgilash" })
-    @Post('view/:id')
-    @Roles(UserRole.STUDENT)
-    markAsViewed(@Req() req, @Param('id', ParseIntPipe) id: number) {
-        return this.lessonsService.markAsViewed(req.user.id, id);
-    }
 }

@@ -21,7 +21,6 @@ export class LessonFilesService {
         dto: CreateLessonFileDto,
         fileData: { url: string; publicId: string },
     ) {
-        // 1. Dars mavjudligini va unga bo'lgan huquqni tekshirish
         const lesson = await this.prisma.lesson.findUnique({
             where: { id: dto.lessonId },
             include: { section: { include: { course: true } } }
@@ -29,7 +28,6 @@ export class LessonFilesService {
 
         if (!lesson) throw new NotFoundException('Dars topilmadi');
 
-        // Faqat Admin yoki Kurs mentori fayl qo'sha oladi
         if (role !== UserRole.ADMIN && lesson.section.course.mentorId !== userId) {
             throw new ForbiddenException("Siz ushbu darsga fayl ilova qila olmaysiz");
         }
@@ -52,7 +50,6 @@ export class LessonFilesService {
 
         if (!lessonFile) throw new NotFoundException('Fayl topilmadi');
 
-        // Faqat Admin yoki Kurs mentori o'chira oladi
         if (role !== UserRole.ADMIN && lessonFile.lesson.section.course.mentorId !== userId) {
             throw new ForbiddenException("Siz ushbu faylni o'chira olmaysiz");
         }
@@ -74,14 +71,12 @@ export class LessonFilesService {
 
         if (!lessonFile) throw new NotFoundException('Fayl topilmadi');
 
-        // Xavfsizlik check
         if (role !== UserRole.ADMIN && lessonFile.lesson.section.course.mentorId !== userId) {
             throw new ForbiddenException("Siz ushbu faylni o'zgartira olmaysiz");
         }
 
         const data: any = {};
 
-        // Agar yangi fayl kelgan bo'lsa, eskisini o'chirish
         if (fileData) {
             if (lessonFile.publicId) {
                 await this.cloudinary.deleteFile(lessonFile.publicId);
@@ -90,7 +85,6 @@ export class LessonFilesService {
             data.publicId = fileData.publicId;
         }
 
-        // Note tekshiruvi: Agar bo'sh string bo'lsa yoki undefined bo'lsa eskisi qolsin
         if (dto.note && dto.note.trim() !== '') {
             data.note = dto.note;
         }
@@ -102,14 +96,16 @@ export class LessonFilesService {
     }
 
     async findAllByLesson(lessonId: number, userId: number, role: UserRole) {
-        // Darsga ruxsati borligini tekshirish (ixtiyoriy, agar darsni hamma ko'ra olsa)
-        // Talaba bo'lsa, kursga yozilganligini tekshirish maqsadga muvofiq
         const lesson = await this.prisma.lesson.findUnique({
             where: { id: lessonId },
-            include: { section: true }
+            include: { section: { include: { course: true } } }
         });
 
         if (!lesson) throw new NotFoundException('Dars topilmadi');
+
+        if (role === UserRole.MENTOR && lesson.section.course.mentorId !== userId) {
+            throw new ForbiddenException("Siz ushbu darsning mentori emassiz");
+        }
 
         if (role === UserRole.STUDENT) {
             const assignment = await this.prisma.assignedCourse.findUnique({

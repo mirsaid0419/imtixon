@@ -31,7 +31,7 @@ export class HomeworkSubmissionsController {
         private readonly cloudinary: CloudinaryService,
     ) { }
 
-    @ApiOperation({ summary: "Talaba tomonidan bajarilgan vazifani topshirish (STUDENT)" })
+    @ApiOperation({ summary: "Talaba bajargan vazifasini topshirishi (STUDENT)" })
     @Roles(UserRole.STUDENT)
     @ApiConsumes('multipart/form-data')
     @UseInterceptors(FileInterceptor('file'))
@@ -43,7 +43,6 @@ export class HomeworkSubmissionsController {
     ) {
         let fileData;
         if (file) {
-            // Faylni Cloudinary'ga yuklash
             const uploadResult = await this.cloudinary.uploadFile(file, 'homework/submissions');
             fileData = { url: uploadResult.url, publicId: uploadResult.publicId };
         }

@@ -32,7 +32,7 @@ export class SectionLessonsController {
         return this.service.create(req.user.id, req.user.role, dto);
     }
 
-    @ApiOperation({ summary: "Kursning barcha bo'limlarini olish" })
+    @ApiOperation({ summary: "Kursning barcha bo'limlarini olish(sotib olgan talaba, admin yoki kurs mentori)" })
     @Get('course/:courseId')
     @Roles(UserRole.ADMIN, UserRole.MENTOR, UserRole.STUDENT)
     findAllByCourse(@Req() req, @Param('courseId', ParseIntPipe) courseId: number) {

@@ -33,6 +33,15 @@ export class SectionLessonsService {
 
     async findAllByCourse(courseId: number, userId: number, role: UserRole) {
 
+        const course = await this.prisma.course.findUnique({
+            where: { id: courseId },
+        });
+        if (!course) throw new NotFoundException('Kurs topilmadi');
+
+        if (role === UserRole.MENTOR && course.mentorId !== userId) {
+            throw new ForbiddenException("Siz ushbu kursning mentori emassiz");
+        }
+
         if (role === UserRole.STUDENT) {
             const purchased = await this.prisma.purchasedCourse.findUnique({
                 where: { courseId_userId: { courseId, userId } },
@@ -44,11 +53,6 @@ export class SectionLessonsService {
 
         const sections = await this.prisma.sectionLesson.findMany({
             where: { courseId },
-            include: {
-                lessons: {
-                    select: { id: true, name: true, createdAt: true }
-                }
-            },
             orderBy: { id: 'asc' },
         });
         return sections;
